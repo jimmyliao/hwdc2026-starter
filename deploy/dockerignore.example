@@ -1,0 +1,14 @@
+.env
+**/.env
+.env.*
+**/.env.*
+.git
+**/.git
+*.jsonl
+**/*.jsonl
+.venv
+**/.venv
+.cache
+**/.cache
+__pycache__
+**/__pycache__

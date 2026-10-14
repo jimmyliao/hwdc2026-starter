@@ -1,0 +1,40 @@
+name: AI Agent Gateway CI（離線 mock 驗證）
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      PROVIDER: mock
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: 安裝相依套件
+        run: uv sync
+      - name: 環境自我檢查
+        run: uv run hw doctor
+      - name: 離線單元測試（mock）
+        run: uv run hw test -q
+      - name: 啟動前環境預檢測試（Fail Loud）
+        env:
+          SERVER_SECRET: ci-mock-server-secret-0123456789abcdef
+          CLASS_CODE: ci-mock-class-code
+          ADMIN_TOKEN: ci-mock-admin-token-0123456789abcdef
+          GEMINI_API_KEY: ci-mock-gemini-key
+        run: uv run python deploy/check_env.py SERVER_SECRET CLASS_CODE ADMIN_TOKEN GEMINI_API_KEY
+      - name: 檢查 L1 與 L2（學員 fork 完成修復後強制驗證 6/6 與 3/3）
+        run: |
+          if [ "${GITHUB_REPOSITORY}" != "jimmyliao/hwdc2026-starter" ]; then
+            uv run hw check L1
+            uv run hw check L2
+          else
+            echo "模板倉庫維持出廠練習狀態（L1=0/6、L2=0/3）；學員 fork 並修完後將自動驗證 6/6 與 3/3"
+          fi

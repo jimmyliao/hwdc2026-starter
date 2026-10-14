@@ -1,8 +1,14 @@
-# LLM Gateway 工作坊：學員快速開始
+# 打造跨模型 AI Agent 的 CI/CD 管線：從本地開發到雲端部署
 
-需求：Python 3.11 以上及 [uv](https://docs.astral.sh/uv/)（建議同時備有 `git`；先跑 `git --version` 與 `uv --version` 確認）。L1 和 L2 可全程離線進行，不需真實 API key。
+**Hello World Dev Conference 2026｜體驗工作坊學員專案（Starter）**
 
-### 1. 取得專案（`git clone` 或免 `git` 抓 tarball）
+- **投影片與學員手冊下載**：<https://jimmyliao.pse.is/hwdc2026>
+- **課堂共筆（HackMD）**：<https://hackmd.io/@HWDC/2026/%2FS1UgtE7sGe>
+- **環境需求**：Python 3.11 以上及 [uv](https://docs.astral.sh/uv/)（建議備有 `git`；先執行 `git --version` 與 `uv --version` 確認）。L1 與 L2 可全程離線進行，不需自備 API Key。
+
+---
+
+## 1. 取得專案（`git clone` 或免 `git` 抓 tarball）
 
 - **方式 A（推薦，已安裝 `git`）**：
   ```sh
@@ -19,26 +25,82 @@
     mkdir hwdc2026-starter -Force | Out-Null; curl.exe -fsSL https://github.com/jimmyliao/hwdc2026-starter/archive/refs/heads/main.tar.gz | tar -xz --strip-components=1 -C hwdc2026-starter; cd hwdc2026-starter
     ```
 
-### 2. 安裝與自我檢查
+---
 
-進入 `hwdc2026-starter/` 後（Windows PowerShell 無須安裝 make）：
+## 2. 安裝與自我檢查
+
+進入 `hwdc2026-starter/` 後執行（Windows PowerShell 無須安裝 `make`，直接使用 `uv run hw <子指令>`）：
 
 ```sh
-uv sync
+make setup             # Windows PowerShell: uv sync
 cp .env.example .env   # Windows PowerShell: copy .env.example .env
-uv run hw doctor
-uv run hw models
-uv run hw check L1
+uv run hw doctor       # 環境自我檢查（確認全部 PASS）
+make models            # Windows PowerShell: uv run hw models
+make check L=L1        # Windows PowerShell: uv run hw check L1（出廠狀態為 0/6）
 ```
 
-macOS／Linux 亦可使用 `make setup`、`cp .env.example .env`、`make models`、`make check L=L1`。
+> **注意**：`make models` 輸出格式為 `別名: 實際模型名稱`——**冒號左邊**（`fast`、`mock`、`class`）才是設定裡要填的「**別名（alias）**」，請勿填冒號右邊的模型全名（如 `gemini-3.1-flash-lite`）。
 
-發放版故意留下 L1 六項練習；基本①②③以 15 分鐘為目標，加強④⑤⑥可選做。依 `uv run hw check L1`（或 `make check L=L1`）的提示，並用 `uv run hw models`（或 `make models`）比對設定，逐題修復。`uv run hw ask "你好"`（或 `make ask Q="你好"`）應顯示回答、provider、token 與美元成本。今天請先用 `mock`；領取令牌後（`uv run hw claim` 或 `make claim`）可使用 `class`。`fast` 需要個人的真實上游 key，課堂不需使用；`smart` 只供講師設 `INSTRUCTOR=1` 使用；`class` 的 `GATEWAY_MODEL` 僅支援 `fast` 或 `mock`。
+### 常用指令對照表
 
-接著可使用 `uv run hw check L2`（或 `make check L=L2`）練習上下文長度、tenant 預算與 fallback，目標 15 分鐘。兩關全過後，執行 `uv run hw run`（或 `make run`）用離線 mock 跑十題、產生 `answers.json`，並查看總 token／成本；未設 `INSTRUCTOR=1` 時直接執行十題 runner 也只允許 mock，避免意外連續真實呼叫。每位學員的 class 真實請求使用本機鎖，一次只能送一筆（可用 `REMOTE_LOCK_TIMEOUT_S` 調整等候秒數），429 自動 full jitter 退避；請等上一個請求完成。`uv run hw submit --dry-run`（或 `make submit SUBMIT_ARGS=--dry-run`）可離線預覽提交資料，`uv run hw submit`（或 `make submit`）正式提交。其他指令：`uv run hw report`（`make report`）產生用量報告、`uv run hw test`（`make test`）執行測試、`uv run hw doctor` 診斷環境。回答固定要求不超過三句、最多 256 輸出 token；`truncated` 表示輸出被截斷。只有選擇真實模型時才需要自行設定對應的 API key；不要把 `.env` 或 key 提交到版控。
+| 功能 | macOS／Linux／WSL（`make`） | Windows PowerShell（跨平台通用） |
+|---|---|---|
+| 安裝相依套件 | `make setup` | `uv sync` |
+| 環境自我診斷 | `uv run hw doctor` | `uv run hw doctor` |
+| 列出可用模型別名 | `make models` | `uv run hw models` |
+| 單題問答 | `make ask Q="你好"` | `uv run hw ask "你好"` |
+| L1 檢查（x/6） | `make check L=L1` | `uv run hw check L1` |
+| L2 檢查（x/3） | `make check L=L2` | `uv run hw check L2` |
+| 領取課堂限時 Token | `CLASS_CODE=<課堂代碼> NICKNAME=你的暱稱 make claim` | `$env:CLASS_CODE="<課堂代碼>"; $env:NICKNAME="你的暱稱"; uv run hw claim` |
+| 執行 10 題離線批次練習 | `make run` | `uv run hw run` |
+| 產生用量與成本報表 | `make report` | `uv run hw report` |
+| 預覽提交資料 | `make submit SUBMIT_ARGS=--dry-run` | `uv run hw submit --dry-run` |
+| 送出成績至排行榜 | `make submit` | `uv run hw submit` |
+| 執行單元測試 | `make test` | `uv run hw test` |
 
-`uv run hw claim`（或 `make claim`，例如 `CLASS_CODE=<現場公布的課堂代碼> NICKNAME=你的暱稱 make claim`）成功後會自動將 `GATEWAY_TOKEN`、`GATEWAY_URL`、`CLASS_CODE`、`NICKNAME` 寫回專案目錄的 `.env`（同時備份於使用者家目錄 `.hwdc26/token`，POSIX 權限 600），terminal 僅顯示遮罩及台北時間到期日；切勿把 `.env` 或 token 貼到 GitHub 或截圖。過期或被撤銷請洽講師／重新領取。講師備用紙條的 CSV／HTML 含完整 token，**不得 commit**。
+---
 
-可選 `uv run --extra examples python examples/openai_sdk_example.py` 示範 OpenAI SDK 呼叫 `mock` 與 `fast`；`fast` 使用真實上游，請只在講師同意及明確設定後執行。`openai` 非預設依賴。可選 `make install-hooks` 啟用提交前掃描（不會由 `make setup` 自動安裝）；因 L1⑥ 刻意保留假 key，啟用後也會攔截它。`make uninstall-hooks` 移除 hook。詳細格式、限制與外洩流程見 [token 規格](../ops/token-format.md)。
+## 3. 工作坊實作流程（L1 → 瞬間 1 → L2 → L3）
 
-跨平台等價指令：`uv run hw ask "你好"`、`models`、`check L1|L2`、`run`、`report`、`claim`、`submit --dry-run`、`test`、`doctor`。未安裝選配 server 依賴時，`hw test` 自動略過 server 測試；講師驗證使用 `uv run --extra server pytest`。
+1. **Part 2｜L1 簡單改（`make check L=L1` 0/6 → 6/6）**：
+   - 依 `make check L=L1` 的提示（與手冊 `lab-guide.html` 的參考做法）修復 `agent/config.py`、`agent/main.py`、`.env.example`、`.gitignore` 六個問題。
+2. **瞬間 1｜換模型不改程式（`make claim` + `PROVIDER=mock/class`）**：
+   - 修完 L1 後，領取課堂限時 token（成功後會自動將 `GATEWAY_TOKEN`、`GATEWAY_URL`、`CLASS_CODE`、`NICKNAME` 寫回 `.env`）：
+     ```sh
+     CLASS_CODE=<現場公布的課堂代碼> NICKNAME=你的暱稱 make claim
+     PROVIDER=mock make ask Q="用一句話介紹台北"
+     PROVIDER=class make ask Q="用一句話介紹台北"
+     ```
+3. **Part 3｜L2 進階（`make check L=L2` 0/3 → 3/3）**：
+   - 執行 `make run` 與 `make report` 檢視 `report.html`，在 `scenarios/tasks.py` 完成輸入 token 截斷（L2-①）、多租戶 `tenant` 預算控管（L2-②）與 429 `FALLBACK` 備援鏈（L2-③）。
+4. **L3｜送出排行榜（`make submit`）**：
+   - 確認 `L1：6/6` 與 `L2：3/3` 後，執行 `make run` 與 `make submit`（全程離線 `mock` 計價，0 次真實呼叫）。
+
+---
+
+## 4. Part 4：CI/CD 管線與 Cloud Run 部署（專案內附完整範例）
+
+本 repo 已內建完整的 GitHub Actions CI/CD 與容器化部署範本，詳見 [`deploy/README.md`](deploy/README.md)：
+
+| 檔案路徑 | 用途 |
+|---|---|
+| [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | GitHub Actions 離線 `mock` CI 管線（執行 `uv sync`、`hw doctor`、`hw test`、環境預檢與 `hw check L1/L2`） |
+| [`.github/workflows/deploy-cloud-run.yml`](.github/workflows/deploy-cloud-run.yml) | Cloud Run CD 部署範本（透過 WIF 驗證並以 Secret Manager `--set-secrets` 注入密鑰） |
+| [`deploy/check_env.py`](deploy/check_env.py) | **瞬間 3（失敗會叫）**：容器啟動前檢查必要環境變數與密鑰長度，缺漏立即 `exit 1` |
+| [`deploy/Dockerfile.example`](deploy/Dockerfile.example) | 正式環境 Cloud Run Dockerfile（非 root 執行、啟動前預檢） |
+| [`deploy/dockerignore.example`](deploy/dockerignore.example) | 防止 `.env`、`.git`、本機紀錄檔被打包進映像或上傳 |
+| [`server/app.py`](server/app.py) | 將 `gateway/llm.py` 包裝為 FastAPI 小服務（含 `/health`、`/claim`、`/v1/chat/completions`、`/leaderboard`） |
+
+### 本機快速演練 Part 4（不需 Docker、不需真實 API Key）
+
+```sh
+# 1. 瞬間 3（失敗會叫）：故意漏設環境變數，啟動瞬間立即報錯 exit 1
+env -u CLASS_CODE -u SERVER_SECRET -u ADMIN_TOKEN \
+  uv run --extra server uvicorn server.app:app --host 127.0.0.1 --port 8080
+
+# 2. 補齊測試變數，在本機啟動 Gateway 服務（瀏覽 http://127.0.0.1:8080/health 與 /leaderboard）
+SERVER_SECRET=demo-only-secret-0123456789abcdef-xyz \
+CLASS_CODE=demo-class-code \
+ADMIN_TOKEN=demo-admin-token-0123456789abcdef-xyz \
+uv run --extra server uvicorn server.app:app --host 127.0.0.1 --port 8080
+```

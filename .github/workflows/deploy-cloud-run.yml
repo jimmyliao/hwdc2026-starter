@@ -1,0 +1,66 @@
+name: Cloud Run 部署範本（Part 4 從本機到雲端）
+
+# 預設改為手動觸發（workflow_dispatch），課後在自己的 GitHub + GCP 設定好 WIF 與 Secret Manager 後即可執行。
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      PROVIDER: mock
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: 安裝相依與離線檢查（L1 6/6、L2 3/3、單元測試）
+        run: |
+          uv sync --extra server
+          uv run hw check L1
+          uv run hw check L2
+          uv run hw test -q
+      - name: 啟動前環境預檢（Fail Loud 驗證）
+        env:
+          SERVER_SECRET: ci-mock-server-secret-0123456789abcdef
+          CLASS_CODE: ci-mock-class-code
+          ADMIN_TOKEN: ci-mock-admin-token-0123456789abcdef
+          GEMINI_API_KEY: ci-mock-gemini-key
+        run: uv run python deploy/check_env.py SERVER_SECRET CLASS_CODE ADMIN_TOKEN GEMINI_API_KEY
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: 透過 Workload Identity Federation 登入 GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: 準備乾淨部署來源（排除 .env 與本機紀錄檔）
+        run: |
+          mkdir -p "$RUNNER_TEMP/cloud-run-source"
+          cp -R gateway server pyproject.toml uv.lock questions.sample.json "$RUNNER_TEMP/cloud-run-source/"
+          cp deploy/Dockerfile.example "$RUNNER_TEMP/cloud-run-source/Dockerfile"
+          cp deploy/check_env.py "$RUNNER_TEMP/cloud-run-source/check_env.py"
+          cp deploy/dockerignore.example "$RUNNER_TEMP/cloud-run-source/.dockerignore"
+          cp deploy/dockerignore.example "$RUNNER_TEMP/cloud-run-source/.gcloudignore"
+      - name: 部署至 Cloud Run（密鑰由 Secret Manager 注入，不進程式碼或映像）
+        run: |
+          gcloud run deploy "${{ vars.CLOUD_RUN_SERVICE }}" \
+            --project "${{ vars.GCP_PROJECT }}" \
+            --region "${{ vars.GCP_REGION }}" \
+            --source "$RUNNER_TEMP/cloud-run-source" \
+            --allow-unauthenticated \
+            --max-instances 1 --min-instances 1 \
+            --set-env-vars "TRUSTED_PROXY_HOPS=1" \
+            --set-secrets "SERVER_SECRET=hwdc-server-secret:latest,CLASS_CODE=hwdc-class-code:latest,ADMIN_TOKEN=hwdc-admin-token:latest,GEMINI_API_KEY=gemini-api-key:latest"

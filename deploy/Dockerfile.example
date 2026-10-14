@@ -1,0 +1,16 @@
+# Cloud Run 正式部署範例（含啟動前 check_env.py 環境預檢與非 root 執行）
+FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+
+WORKDIR /app
+COPY pyproject.toml uv.lock ./
+COPY gateway/ gateway/
+COPY server/ server/
+COPY questions.sample.json check_env.py ./
+RUN uv sync --frozen --no-dev --extra server --extra gemini --no-install-project \
+    && groupadd --system --gid 10001 app \
+    && useradd --system --uid 10001 --gid app --no-create-home --shell /usr/sbin/nologin app
+
+ENV PATH="/app/.venv/bin:$PATH"
+ENV PORT=8080
+USER 10001:10001
+CMD ["sh", "-c", "python /app/check_env.py SERVER_SECRET CLASS_CODE ADMIN_TOKEN GEMINI_API_KEY && exec uvicorn server.app:app --host 0.0.0.0 --port \"${PORT}\" --no-proxy-headers"]
