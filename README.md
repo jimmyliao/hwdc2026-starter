@@ -1,17 +1,37 @@
 # LLM Gateway 工作坊：學員快速開始
 
-需求：Python 3.11 以上及 [uv](https://docs.astral.sh/uv/)；L1 和 L2 可全程離線進行，不需真實 API key。
+需求：Python 3.11 以上及 [uv](https://docs.astral.sh/uv/)（建議同時備有 `git`；先跑 `git --version` 與 `uv --version` 確認）。L1 和 L2 可全程離線進行，不需真實 API key。
 
-解壓發放包後進入 `hwdc2026-starter/`。Windows PowerShell 無須安裝 make：
+### 1. 取得專案（`git clone` 或免 `git` 抓 tarball）
+
+- **方式 A（推薦，已安裝 `git`）**：
+  ```sh
+  git clone https://github.com/jimmyliao/hwdc2026-starter.git
+  cd hwdc2026-starter
+  ```
+- **方式 B（免 `git`，直接抓 GitHub tarball 解壓縮）**：
+  - macOS／Linux／WSL：
+    ```sh
+    mkdir -p hwdc2026-starter && curl -fsSL https://github.com/jimmyliao/hwdc2026-starter/archive/refs/heads/main.tar.gz | tar -xz --strip-components=1 -C hwdc2026-starter && cd hwdc2026-starter
+    ```
+  - Windows PowerShell：
+    ```powershell
+    mkdir hwdc2026-starter -Force | Out-Null; curl.exe -fsSL https://github.com/jimmyliao/hwdc2026-starter/archive/refs/heads/main.tar.gz | tar -xz --strip-components=1 -C hwdc2026-starter; cd hwdc2026-starter
+    ```
+
+### 2. 安裝與自我檢查
+
+進入 `hwdc2026-starter/` 後（Windows PowerShell 無須安裝 make）：
 
 ```sh
 uv sync
+cp .env.example .env   # Windows PowerShell: copy .env.example .env
 uv run hw doctor
 uv run hw models
 uv run hw check L1
 ```
 
-macOS／Linux 亦可使用 `make setup`、複製 `.env.example` 為 `.env`、`make models`、`make check L=L1`。
+macOS／Linux 亦可使用 `make setup`、`cp .env.example .env`、`make models`、`make check L=L1`。
 
 發放版故意留下 L1 六項練習；基本①②③以 15 分鐘為目標，加強④⑤⑥可選做。依 `uv run hw check L1`（或 `make check L=L1`）的提示，並用 `uv run hw models`（或 `make models`）比對設定，逐題修復。`uv run hw ask "你好"`（或 `make ask Q="你好"`）應顯示回答、provider、token 與美元成本。今天請先用 `mock`；領取令牌後（`uv run hw claim` 或 `make claim`）可使用 `class`。`fast` 需要個人的真實上游 key，課堂不需使用；`smart` 只供講師設 `INSTRUCTOR=1` 使用；`class` 的 `GATEWAY_MODEL` 僅支援 `fast` 或 `mock`。
 
