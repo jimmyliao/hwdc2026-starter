@@ -52,7 +52,10 @@ def run(questions_path: Path, output: Path, usage_path: Path) -> dict:
     start = usage_count(usage_path)
     answers = []
     previous_usage = os.environ.get("USAGE_LOG")
+    previous_rpm = os.environ.get("RPM_LIMIT")
     os.environ["USAGE_LOG"] = str(usage_path)
+    if os.getenv("INSTRUCTOR") != "1" and previous_rpm is None:
+        os.environ["RPM_LIMIT"] = "1000"
     try:
         with llm.mock_only() if os.getenv("INSTRUCTOR") != "1" else nullcontext():
             for question in questions:
@@ -67,6 +70,10 @@ def run(questions_path: Path, output: Path, usage_path: Path) -> dict:
             os.environ.pop("USAGE_LOG", None)
         else:
             os.environ["USAGE_LOG"] = previous_usage
+        if previous_rpm is None:
+            os.environ.pop("RPM_LIMIT", None)
+        else:
+            os.environ["RPM_LIMIT"] = previous_rpm
     result = {"answers": answers, "usage_start": start, "usage_end": usage_count(usage_path)}
     output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return result
