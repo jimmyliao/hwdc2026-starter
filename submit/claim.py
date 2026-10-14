@@ -47,20 +47,19 @@ def claim(env_path: Path | None = None) -> tuple[str, str]:
     if not isinstance(payload, dict) or not isinstance(payload.get("token"), str) or not payload["token"] or not payload.get("expires_at"):
         raise RuntimeError("講師服務回應缺少 token 或 expires_at")
     token = payload["token"]
+    path = token_path()
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    fd = os.open(path, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        handle.write(token + "\n")
+    if os.name == "posix":
+        path.chmod(0o600)
     if env_path is not None:
         if not env_path.exists():
             fd = os.open(env_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
             os.close(fd)
         if not set_key(str(env_path), "GATEWAY_TOKEN", token):
             raise RuntimeError("無法寫入 .env")
-    else:
-        path = token_path()
-        path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-        fd = os.open(path, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
-        with os.fdopen(fd, "w", encoding="utf-8") as handle:
-            handle.write(token + "\n")
-        if os.name == "posix":
-            path.chmod(0o600)
     return token, str(payload["expires_at"])
 
 
@@ -70,8 +69,9 @@ def main() -> None:
     args = parser.parse_args()
     load_dotenv(".env")
     try:
-        write_env = args.env or os.getenv("CLAIM_WRITE_ENV") == "1"
-        token, expires = claim(Path(".env") if write_env else None)
+        env_file = Path(".env")
+        write_env = args.env or os.getenv("CLAIM_WRITE_ENV") == "1" or env_file.is_file()
+        token, expires = claim(env_file if write_env else None)
     except (ValueError, RuntimeError, OSError) as exc:
         raise SystemExit(str(exc)) from exc
     if Path(".env").is_file():

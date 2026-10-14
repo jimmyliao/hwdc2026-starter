@@ -332,7 +332,7 @@ def test_claim_writes_only_token_and_preserves_env(remote_env, gateway_stub, tmp
     assert "new-secret-token" not in capsys.readouterr().out
 
 
-def test_claim_cli_loads_env_without_exposing_token(remote_env, gateway_stub, tmp_path, monkeypatch, capsys):
+def test_claim_cli_loads_env_and_saves_token_to_env(remote_env, gateway_stub, tmp_path, monkeypatch, capsys):
     _, routes, _ = gateway_stub
     routes["/claim"] = (200, {"token": "private-token", "expires_at": "2099-01-01T00:00:00Z"}, {})
     monkeypatch.chdir(tmp_path)
@@ -346,18 +346,18 @@ def test_claim_cli_loads_env_without_exposing_token(remote_env, gateway_stub, tm
     claim.main()
     stored = tmp_path / ".hwdc26" / "token"
     assert stored.read_text(encoding="utf-8").strip() == "private-token"
-    assert "GATEWAY_TOKEN" not in Path(".env").read_text(encoding="utf-8")
+    assert "private-token" in Path(".env").read_text(encoding="utf-8")
     if os.name == "posix":
         assert stored.stat().st_mode & 0o777 == 0o600
     output = capsys.readouterr().out
-    assert "private-token" not in output and "專案外" in output and "2099-01-01" in output
+    assert "private-token" not in output and "已寫入 .env" in output and "2099-01-01" in output
 
 
 def test_claim_cli_persists_env_keys_and_sends_reclaim_auth(remote_env, gateway_stub, tmp_path, monkeypatch):
     _, routes, requests = gateway_stub
     routes["/claim"] = (200, {"token": "reclaim-token", "expires_at": "2099-01-01T00:00:00Z"}, {})
     monkeypatch.chdir(tmp_path)
-    Path(".env").write_text("CLASS_CODE=\nNICKNAME=\n", encoding="utf-8")
+    Path(".env").write_text("CLASS_CODE=\nNICKNAME=\nGATEWAY_TOKEN=\n", encoding="utf-8")
     monkeypatch.delenv("GATEWAY_TOKEN", raising=False)
     monkeypatch.setenv("CLASS_CODE", "workshop")
     monkeypatch.setenv("NICKNAME", "student")
@@ -366,12 +366,11 @@ def test_claim_cli_persists_env_keys_and_sends_reclaim_auth(remote_env, gateway_
     env_text = Path(".env").read_text(encoding="utf-8")
     assert "CLASS_CODE" in env_text and "workshop" in env_text
     assert "NICKNAME" in env_text and "student" in env_text
-    assert "GATEWAY_TOKEN" not in env_text
+    assert "reclaim-token" in env_text
     assert (tmp_path / ".hwdc26" / "token").read_text(encoding="utf-8").strip() == "reclaim-token"
     assert "Authorization" not in requests[0][2]
     claim.main()
     assert requests[1][2].get("Authorization") == "Bearer reclaim-token"
-
 
 def test_claim_env_opt_in_and_file_fallback(remote_env, gateway_stub, tmp_path, monkeypatch, capsys):
     gateway_stub[1]["/claim"] = (200, {
