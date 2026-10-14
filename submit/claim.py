@@ -58,7 +58,7 @@ def claim(env_path: Path | None = None) -> tuple[str, str]:
         if not env_path.exists():
             fd = os.open(env_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
             os.close(fd)
-        if not set_key(str(env_path), "GATEWAY_TOKEN", token, quote_mode="auto"):
+        if not set_key(str(env_path), "GATEWAY_TOKEN", token, quote_mode="never"):
             raise RuntimeError("無法寫入 .env")
     return token, str(payload["expires_at"])
 
@@ -77,7 +77,8 @@ def main() -> None:
     if Path(".env").is_file():
         for key in ("GATEWAY_URL", "CLASS_CODE", "NICKNAME"):
             if val := os.getenv(key, "").strip():
-                set_key(".env", key, val, quote_mode="auto")
+                mode = "always" if any(c.isspace() for c in val) else "never"
+                set_key(".env", key, val, quote_mode=mode)
     visible = min(24, max(0, len(token) - 5))
     print(f"已領取 token：{token[:visible]}…{token[-4:]}；到期日：{expires}")
     if write_env:
