@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hwdc2026-starter"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = ["python-dotenv", "rich", "pytest"]
+
+[project.scripts]
+hw = "hw.cli:main"
+
+[project.optional-dependencies]
+gemini = ["google-genai"]
+server = ["fastapi", "uvicorn", "httpx"]
+examples = ["openai"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["gateway", "agent", "checks", "report", "submit", "server", "scenarios", "hw", "tools"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

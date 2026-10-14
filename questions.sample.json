@@ -1,0 +1,12 @@
+[
+  {"id": "q01", "question": "用一句話說明 Python 中的 list 是什麼。", "expected_keywords": ["list"], "tenant": "team-a"},
+  {"id": "q02", "question": "Python 的 dict 用來儲存什麼？", "expected_keywords": ["dict"], "tenant": "team-b"},
+  {"id": "q03", "question": "什麼是 JSON？請提到 JSON。", "expected_keywords": ["JSON"]},
+  {"id": "q04", "question": "說明 HTTP 的用途，請提到 HTTP。", "expected_keywords": ["HTTP"]},
+  {"id": "q05", "question": "什麼是 API？請提到 API。", "expected_keywords": ["API"]},
+  {"id": "q06", "question": "解釋 cache 的用途，請提到 cache。", "expected_keywords": ["cache"]},
+  {"id": "q07", "question": "說明 token 在語言模型中的意義，請提到 token。", "expected_keywords": ["token"]},
+  {"id": "q08", "question": "請說明 fallback 的用途，並提到 fallback。", "expected_keywords": ["fallback"], "fallback": true},
+  {"id": "q09", "question": "說明 budget 的作用，請提到 budget。", "expected_keywords": ["budget"]},
+  {"id": "q10", "question": "請閱讀以下大量文字，回答主題標記是什麼：{long_context}", "expected_keywords": ["星河"]}
+]
