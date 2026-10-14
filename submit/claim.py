@@ -8,7 +8,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from dotenv import load_dotenv, set_key
-from gateway.token_store import token_path
+from gateway.token_store import read_token, token_path
 
 
 def claim(env_path: Path | None = None) -> tuple[str, str]:
@@ -22,14 +22,21 @@ def claim(env_path: Path | None = None) -> tuple[str, str]:
     nickname = os.getenv("NICKNAME", "").strip()
     if not code or not nickname:
         raise ValueError("請設定 CLASS_CODE 與 NICKNAME")
+    headers = {"Content-Type": "application/json"}
+    try:
+        existing = read_token()
+    except OSError:
+        existing = ""
+    if existing:
+        headers["Authorization"] = f"Bearer {existing}"
     request = Request(
         url,
         data=json.dumps({"class_code": code, "nickname": nickname}, ensure_ascii=False).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
+        headers=headers,
         method="POST",
     )
     try:
-        with urlopen(request, timeout=15) as response:
+        with urlopen(request, timeout=30) as response:
             payload = json.load(response)
     except HTTPError as exc:
         raise RuntimeError(f"領取 token 失敗：HTTP {exc.code}") from exc
@@ -67,6 +74,10 @@ def main() -> None:
         token, expires = claim(Path(".env") if write_env else None)
     except (ValueError, RuntimeError, OSError) as exc:
         raise SystemExit(str(exc)) from exc
+    if Path(".env").is_file():
+        for key in ("GATEWAY_URL", "CLASS_CODE", "NICKNAME"):
+            if val := os.getenv(key, "").strip():
+                set_key(".env", key, val)
     visible = min(24, max(0, len(token) - 5))
     print(f"已領取 token：{token[:visible]}…{token[-4:]}；到期日：{expires}")
     if write_env:

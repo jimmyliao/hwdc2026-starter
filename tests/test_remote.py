@@ -353,6 +353,26 @@ def test_claim_cli_loads_env_without_exposing_token(remote_env, gateway_stub, tm
     assert "private-token" not in output and "專案外" in output and "2099-01-01" in output
 
 
+def test_claim_cli_persists_env_keys_and_sends_reclaim_auth(remote_env, gateway_stub, tmp_path, monkeypatch):
+    _, routes, requests = gateway_stub
+    routes["/claim"] = (200, {"token": "reclaim-token", "expires_at": "2099-01-01T00:00:00Z"}, {})
+    monkeypatch.chdir(tmp_path)
+    Path(".env").write_text("CLASS_CODE=\nNICKNAME=\n", encoding="utf-8")
+    monkeypatch.delenv("GATEWAY_TOKEN", raising=False)
+    monkeypatch.setenv("CLASS_CODE", "workshop")
+    monkeypatch.setenv("NICKNAME", "student")
+    monkeypatch.setattr(sys, "argv", ["claim"])
+    claim.main()
+    env_text = Path(".env").read_text(encoding="utf-8")
+    assert "CLASS_CODE" in env_text and "workshop" in env_text
+    assert "NICKNAME" in env_text and "student" in env_text
+    assert "GATEWAY_TOKEN" not in env_text
+    assert (tmp_path / ".hwdc26" / "token").read_text(encoding="utf-8").strip() == "reclaim-token"
+    assert "Authorization" not in requests[0][2]
+    claim.main()
+    assert requests[1][2].get("Authorization") == "Bearer reclaim-token"
+
+
 def test_claim_env_opt_in_and_file_fallback(remote_env, gateway_stub, tmp_path, monkeypatch, capsys):
     gateway_stub[1]["/claim"] = (200, {
         "token": "leapkey-hwdc26-" + "20261016-c2xpcDAx-c2lnbmF0dXJl",
