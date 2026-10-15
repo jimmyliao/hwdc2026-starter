@@ -373,6 +373,7 @@ def test_claim_cli_persists_env_keys_and_sends_reclaim_auth(remote_env, gateway_
     assert requests[1][2].get("Authorization") == "Bearer reclaim-token"
 
 def test_claim_env_opt_in_and_file_fallback(remote_env, gateway_stub, tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
     gateway_stub[1]["/claim"] = (200, {
         "token": "leapkey-hwdc26-" + "20261016-c2xpcDAx-c2lnbmF0dXJl",
         "expires_at": "2026-10-16T23:59:59+08:00",
@@ -387,7 +388,6 @@ def test_claim_env_opt_in_and_file_fallback(remote_env, gateway_stub, tmp_path, 
     assert token.startswith("leapkey-hwdc26-")
     assert token not in capsys.readouterr().out
     monkeypatch.setattr(sys, "argv", ["claim", "--env"])
-    monkeypatch.chdir(tmp_path)
     claim.main()
     assert token in (tmp_path / ".env").read_text(encoding="utf-8")
     assert token not in capsys.readouterr().out

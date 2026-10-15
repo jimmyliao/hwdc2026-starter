@@ -75,7 +75,7 @@ def main() -> None:
     except (ValueError, RuntimeError, OSError) as exc:
         raise SystemExit(str(exc)) from exc
     if Path(".env").is_file():
-        for key in ("GATEWAY_URL", "CLASS_CODE", "NICKNAME"):
+        for key in ("CLASS_CODE", "NICKNAME"):
             if val := os.getenv(key, "").strip():
                 mode = "always" if any(c.isspace() for c in val) else "never"
                 set_key(".env", key, val, quote_mode=mode)
