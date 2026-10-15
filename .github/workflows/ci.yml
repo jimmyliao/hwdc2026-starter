@@ -16,7 +16,7 @@ jobs:
       PROVIDER: mock
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.3.0
       - name: 安裝相依套件
         run: uv sync
       - name: 環境自我檢查
