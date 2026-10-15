@@ -109,6 +109,7 @@ def test_submit_dry_run_scores_quality_and_cost(tmp_path, monkeypatch, capsys):
     l2_result = tmp_path / "l2.txt"
     l1.write_text("4/6", encoding="utf-8")
     l2_result.write_text("2/3", encoding="utf-8")
+    monkeypatch.setattr(submit, "read_token", lambda: "")
     monkeypatch.setattr("sys.argv", [
         "submit", "--dry-run", "--answers", str(answers), "--usage", str(usage),
         "--l1-result", str(l1), "--l2-result", str(l2_result),
