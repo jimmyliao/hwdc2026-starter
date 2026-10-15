@@ -11,12 +11,12 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       PROVIDER: mock
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
       - name: 安裝相依套件
         run: uv sync
       - name: 環境自我檢查
@@ -24,6 +24,7 @@ jobs:
       - name: 離線單元測試（mock）
         run: uv run hw test -q
       - name: 啟動前環境預檢測試（Fail Loud）
+        # 註：以下 ci-mock-* 皆為僅供離線測試 check_env.py 長度檢核的假字串（Dummy Values），非真實憑證
         env:
           SERVER_SECRET: ci-mock-server-secret-0123456789abcdef
           CLASS_CODE: ci-mock-class-code

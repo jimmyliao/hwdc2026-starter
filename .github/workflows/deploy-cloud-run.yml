@@ -9,14 +9,14 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     env:
       PROVIDER: mock
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
       - name: 安裝相依與離線檢查（L1 6/6、L2 3/3、單元測試）
         run: |
           uv sync --extra server
@@ -24,6 +24,7 @@ jobs:
           uv run hw check L2
           uv run hw test -q
       - name: 啟動前環境預檢（Fail Loud 驗證）
+        # 註：以下 ci-mock-* 皆為僅供離線測試 check_env.py 長度檢核的假字串（Dummy Values），非真實憑證
         env:
           SERVER_SECRET: ci-mock-server-secret-0123456789abcdef
           CLASS_CODE: ci-mock-class-code
@@ -33,19 +34,19 @@ jobs:
 
   deploy:
     needs: test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: production
     permissions:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: 透過 Workload Identity Federation 登入 GCP
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: ${{ vars.WIF_PROVIDER }}
           service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
-      - uses: google-github-actions/setup-gcloud@v2
+      - uses: google-github-actions/setup-gcloud@v3
       - name: 準備乾淨部署來源（排除 .env 與本機紀錄檔）
         run: |
           mkdir -p "$RUNNER_TEMP/cloud-run-source"
